@@ -1,8 +1,9 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const app = express();
-const { logger } = require('./middleware/logger');
-const api = require('./routes/index.js');
+const { logger } = require('../middleware/logger');
+const api = require('../routes/index.js');
 
 const port = process.env.PORT || 3001;
 
