@@ -1,11 +1,9 @@
-const notes = require('express').Router();
-
+const route = require('express').Router();
 
 // Middleware to parse incoming JSON data
-app.use(express.json());
 
 // Route handler for GET requests to retrieve all notes
-app.get('/api/notes', (req, res) => {
+route.get('/notes', (req, res) => {
   // Read data from the JSON file
   const data = fs.readFileSync(path.join(__dirname, 'db.json'), 'utf8');
   const notes = JSON.parse(data);
@@ -15,7 +13,7 @@ app.get('/api/notes', (req, res) => {
 });
 
 // Route handler for POST requests to create a new note
-app.post('/api/notes', (req, res) => {
+route.post('/notes', (req, res) => {
   // Read data from the JSON file
   const data = fs.readFileSync(path.join(__dirname, 'db.json'), 'utf8');
   const notes = JSON.parse(data);
@@ -31,8 +29,44 @@ app.post('/api/notes', (req, res) => {
   res.json({ message: 'Note created successfully' });
 });
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
+route.delete("/notes/:id", (req, res) => {
+  // Read the existing notes from the db.json file
+  fs.readFile('db.json', 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Server error');
+    }
 
-module.exports = notes;
+    try {
+      // Parse the notes data from JSON
+      const notes = JSON.parse(data);
+
+      // Find the index of the note to delete
+      const noteIndex = notes.findIndex(note => note.id === req.params.id);
+
+      if (noteIndex === -1) {
+        // If the note doesn't exist, send a 404 Not Found response
+        return res.status(404).send('Note not found');
+      }
+
+      // Remove the note from the notes array
+      notes.splice(noteIndex, 1);
+
+      // Write the updated notes to the db.json file
+      fs.writeFile('db.json', JSON.stringify(notes), 'utf8', err => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send('Server error');
+        }
+
+        // Send a success response
+        return res.status(200).send('Note deleted');
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).send('Server error');
+    }
+  });
+})
+
+module.exports = route;
