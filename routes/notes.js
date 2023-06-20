@@ -1,7 +1,7 @@
 const route = require("express").Router();
+const { v4: uuidv4 } = require("uuid");
 const fs = require("fs");
 const path = require("path");
-const { v4: uuidv4 } = require("uuid");
 
 // Middleware to parse incoming JSON data
 
@@ -27,7 +27,6 @@ route.post("/notes", (req, res) => {
     text: req.body.text,
     id: uuidv4(),
   };
-
   notes.push(newNote);
 
   // Write the updated notes data back to the JSON file
@@ -54,22 +53,18 @@ route.delete("/notes/:id", (req, res) => {
 
       // Find the index of the note to delete
       const noteToDelete = req.params.id;
-      const updatedNotes = notes.filter((note) => note.id !== noteToDelete);
+      const newNotes = notes.filter((note) => note.id !== noteToDelete);
 
-      fs.writeFile(
-        path.join(__dirname, "../db/db.json"),
-        JSON.stringify(updatedNotes),
-        "utf8",
-        (err) => {
-          if (err) {
-            console.error(err);
-            return res.status(500).send("Server error");
-          }
-
-          // Send a success response
-          return res.status(200).send("Note deleted");
+      // Write the updated notes to the db.json file
+      fs.writeFile(path.join(__dirname, "../db/db.json"), JSON.stringify(newNotes), "utf8", (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send("Server error");
         }
-      );
+
+        // Send a success response
+        return res.status(200).send("Note deleted");
+      });
     } catch (error) {
       console.error(error);
       return res.status(500).send("Server error");
