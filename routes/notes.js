@@ -1,11 +1,14 @@
-const route = require('express').Router();
+const route = require("express").Router();
+const fs = require("fs");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 
 // Middleware to parse incoming JSON data
 
 // Route handler for GET requests to retrieve all notes
-route.get('/notes', (req, res) => {
+route.get("/notes", (req, res) => {
   // Read data from the JSON file
-  const data = fs.readFileSync(path.join(__dirname, 'db.json'), 'utf8');
+  const data = fs.readFileSync(path.join(__dirname, "../db/db.json"), "utf8");
   const notes = JSON.parse(data);
 
   // Send the notes data as a response
@@ -13,28 +16,36 @@ route.get('/notes', (req, res) => {
 });
 
 // Route handler for POST requests to create a new note
-route.post('/notes', (req, res) => {
+route.post("/notes", (req, res) => {
   // Read data from the JSON file
-  const data = fs.readFileSync(path.join(__dirname, 'db.json'), 'utf8');
+  const data = fs.readFileSync(path.join(__dirname, "../db/db.json"), "utf8");
   const notes = JSON.parse(data);
 
   // Add the new note to the array of notes
-  const newNote = req.body;
+  const newNote = {
+    title: req.body.title,
+    text: req.body.text,
+    id: uuidv4(),
+  };
+
   notes.push(newNote);
 
   // Write the updated notes data back to the JSON file
-  fs.writeFileSync(path.join(__dirname, 'db.json'), JSON.stringify(notes));
+  fs.writeFileSync(
+    path.join(__dirname, "../db/db.json"),
+    JSON.stringify(notes)
+  );
 
   // Send a success response
-  res.json({ message: 'Note created successfully' });
+  res.json({ message: "Note created successfully" });
 });
 
 route.delete("/notes/:id", (req, res) => {
   // Read the existing notes from the db.json file
-  fs.readFile('db.json', 'utf8', (err, data) => {
+  fs.readFile(path.join(__dirname, "../db/db.json"), "utf8", (err, data) => {
     if (err) {
       console.error(err);
-      return res.status(500).send('Server error');
+      return res.status(500).send("Server error");
     }
 
     try {
@@ -42,31 +53,28 @@ route.delete("/notes/:id", (req, res) => {
       const notes = JSON.parse(data);
 
       // Find the index of the note to delete
-      const noteIndex = notes.findIndex(note => note.id === req.params.id);
+      const noteToDelete = req.params.id;
+      const updatedNotes = notes.filter((note) => note.id !== noteToDelete);
 
-      if (noteIndex === -1) {
-        // If the note doesn't exist, send a 404 Not Found response
-        return res.status(404).send('Note not found');
-      }
+      fs.writeFile(
+        path.join(__dirname, "../db/db.json"),
+        JSON.stringify(updatedNotes),
+        "utf8",
+        (err) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).send("Server error");
+          }
 
-      // Remove the note from the notes array
-      notes.splice(noteIndex, 1);
-
-      // Write the updated notes to the db.json file
-      fs.writeFile('db.json', JSON.stringify(notes), 'utf8', err => {
-        if (err) {
-          console.error(err);
-          return res.status(500).send('Server error');
+          // Send a success response
+          return res.status(200).send("Note deleted");
         }
-
-        // Send a success response
-        return res.status(200).send('Note deleted');
-      });
+      );
     } catch (error) {
       console.error(error);
-      return res.status(500).send('Server error');
+      return res.status(500).send("Server error");
     }
   });
-})
+});
 
 module.exports = route;
